@@ -35,13 +35,7 @@ _TABLES = "messages, threads, jobs, chunks, blobs, documents, auth_sessions, use
 @pytest.fixture(scope="session", autouse=True)
 def _migrated():
     settings = get_settings()
-
-    async def _run() -> None:
-        pool = await db.open_pool(settings, max_size=2)
-        await db.run_migrations(pool)
-        await db.close_pool()
-
-    asyncio.run(_run())
+    asyncio.run(db.run_migrations(settings.DATABASE_URL))
     yield
 
 
@@ -59,6 +53,24 @@ def _clean_state(_migrated):
 def client():
     with TestClient(app) as c:
         yield c
+
+
+async def insert_document(
+    pool,
+    *,
+    owner_id=None,
+    filename: str = "test.pdf",
+    mime: str = "application/pdf",
+    size_bytes: int = 10,
+) -> str:
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            """insert into documents (owner_id, filename, mime, size_bytes, sha256)
+               values (%s, %s, %s, %s, 'x') returning id""",
+            (owner_id, filename, mime, size_bytes),
+        )
+        row = await cur.fetchone()
+        return str(row["id"])
 
 
 @contextlib.contextmanager
