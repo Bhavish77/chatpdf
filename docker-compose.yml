@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: askdocs
+      POSTGRES_PASSWORD: askdocs
+      POSTGRES_DB: askdocs
+    ports:
+      - "5544:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U askdocs"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://askdocs:askdocs@postgres:5432/askdocs
+      COOKIE_SECURE: "false"
+      EMBEDDED_WORKER: "false"
+    ports:
+      - "8010:8000"
+
+volumes:
+  pgdata:
