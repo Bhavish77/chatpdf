@@ -27,7 +27,8 @@ from app.vectorindex import PgVectorIndex
 
 logger = logging.getLogger(__name__)
 
-POLL_IDLE_S = 30
+POLL_BUSY_S = 2
+POLL_IDLE_MAX_S = 30
 MAINTENANCE_INTERVAL_S = 120
 
 
@@ -80,17 +81,22 @@ async def _claim_loop(
     on_tick: Callable[[], None] | None,
 ) -> None:
     wake = queue.get_wake_event()
+    poll_interval = POLL_BUSY_S
     while not stop_event.is_set():
         job = await queue.claim(pool, name)
         if on_tick:
             on_tick()
         if job is None:
+            # Poll quickly for a while after work was last seen, backing off
+            # toward POLL_IDLE_MAX_S the longer nothing shows up.
+            poll_interval = min(poll_interval * 2, POLL_IDLE_MAX_S)
             wake.clear()
             try:
-                await asyncio.wait_for(wake.wait(), timeout=POLL_IDLE_S)
+                await asyncio.wait_for(wake.wait(), timeout=poll_interval)
             except TimeoutError:
                 pass
             continue
+        poll_interval = POLL_BUSY_S
         await _run_job(pool, llm, blobs, vectors, settings, job)
 
 

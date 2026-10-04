@@ -112,7 +112,13 @@ class GeminiClient:
     async def embed_documents(
         self, texts: list[str], *, title: str | None = None
     ) -> list[list[float]]:
-        contents = [_document_text(t, title) for t in texts]
+        # DEVIATION (checked live against the real API, 4 Oct 2026): passing a
+        # plain list[str] as `contents` does NOT batch independent documents -
+        # the API treats the strings as multiple *parts of one* Content and
+        # returns a single embedding for all of them combined. Wrapping each
+        # text in its own types.Content is what actually gets one embedding
+        # per input back.
+        contents = [types.Content(parts=[types.Part(text=_document_text(t, title))]) for t in texts]
 
         async def _call() -> list[list[float]]:
             await self._throttle_embed()
@@ -127,12 +133,14 @@ class GeminiClient:
         return await _with_retry(_call)
 
     async def embed_query(self, text: str) -> list[float]:
+        contents = [types.Content(parts=[types.Part(text=_query_text(text))])]
+
         async def _call() -> list[list[float]]:
             await self._throttle_embed()
             async with self._concurrency:
                 resp = await self._client.aio.models.embed_content(
                     model=self._settings.EMBED_MODEL,
-                    contents=[_query_text(text)],
+                    contents=contents,
                     config=types.EmbedContentConfig(output_dimensionality=self._settings.EMBED_DIM),
                 )
             return [e.values for e in resp.embeddings]
