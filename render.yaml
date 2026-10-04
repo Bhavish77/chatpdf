@@ -1,0 +1,84 @@
+services:
+  - name: askdocs
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      # Secrets - Render prompts for these when the blueprint is first created,
+      # and they are never stored in this file or in git.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SIGNUP_INVITE_CODE
+        sync: false
+
+      # Render-specific: this service runs the worker inside the API process
+      # (no separate worker service on the free plan), trusts Render's
+      # X-Forwarded-* headers, and requires HTTPS cookies.
+      - key: EMBEDDED_WORKER
+        value: "true"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: PUBLIC_ORIGIN
+        value: https://askdocs.onrender.com
+
+      # Same defaults as .env.example; tweak in the Render dashboard as needed.
+      - key: GEN_MODEL
+        value: gemini-3.5-flash
+      - key: HELPER_MODEL
+        value: gemini-3.5-flash-lite
+      - key: EMBED_MODEL
+        value: gemini-embedding-2
+      - key: EMBED_DIM
+        value: "768"
+      - key: WORKER_CONCURRENCY
+        value: "1"
+      - key: EMBED_BATCH_SIZE
+        value: "32"
+      - key: EMBED_MIN_INTERVAL_S
+        value: "0.7"
+      - key: LLM_MAX_CONCURRENCY
+        value: "3"
+      - key: RETRIEVAL_K
+        value: "8"
+      - key: GRADE_MIN_RELEVANT
+        value: "2"
+      - key: ENABLE_GROUNDING_CHECK
+        value: "true"
+      - key: SESSION_TTL_DAYS
+        value: "7"
+      - key: SIGNUPS_ENABLED
+        value: "true"
+      - key: SIGNUP_RATE_PER_HOUR
+        value: "5"
+      - key: LOGIN_MAX_FAILURES
+        value: "5"
+      - key: MAX_FILE_MB
+        value: "15"
+      - key: MAX_PAGES
+        value: "200"
+      - key: MAX_CHUNKS_PER_DOC
+        value: "1500"
+      - key: MAX_DOCS_PER_USER
+        value: "10"
+      - key: MAX_USER_STORAGE_MB
+        value: "50"
+      - key: MAX_TOTAL_STORAGE_MB
+        value: "400"
+      - key: USER_CHAT_PER_DAY
+        value: "100"
+      - key: CHAT_RATE_PER_MIN
+        value: "15"
+      - key: UPLOAD_RATE_PER_HOUR
+        value: "20"
+      - key: DOC_TTL_DAYS
+        value: "7"
+      - key: ACCOUNT_TTL_DAYS
+        value: "30"
+      - key: LOG_LEVEL
+        value: INFO
