@@ -35,9 +35,13 @@ def test_upload_creates_queued_documents_and_jobs(client):
     assert all(d["status"] == "queued" for d in docs)
     assert all(d["progress"] == 0 for d in docs)
 
+    doc_ids = [d["id"] for d in docs]
     settings = get_settings()
     with psycopg.connect(settings.DATABASE_URL, autocommit=True) as conn:
-        cur = conn.execute("select count(*) from jobs where kind = 'ingest_document'")
+        cur = conn.execute(
+            "select count(*) from jobs where kind = 'ingest_document' and payload->>'document_id' = any(%s)",
+            (doc_ids,),
+        )
         assert cur.fetchone()[0] == 2
 
 

@@ -1,5 +1,8 @@
 """Public, unauthenticated endpoints."""
 
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Request
 from psycopg_pool import AsyncConnectionPool
 
@@ -7,6 +10,8 @@ from app.config import Settings
 from app.deps import get_pool_dep, get_settings_dep
 
 router = APIRouter(prefix="/api", tags=["meta"])
+
+SEED_SUGGESTIONS_PATH = Path(__file__).resolve().parent.parent.parent / "seed" / "suggestions.json"
 
 
 @router.get("/config")
@@ -30,6 +35,13 @@ async def get_config(settings: Settings = Depends(get_settings_dep)) -> dict:
         "signups_enabled": settings.SIGNUPS_ENABLED,
         "invite_required": bool(settings.SIGNUP_INVITE_CODE),
     }
+
+
+@router.get("/seed-suggestions")
+async def seed_suggestions() -> list[str]:
+    if not SEED_SUGGESTIONS_PATH.exists():
+        return []
+    return json.loads(SEED_SUGGESTIONS_PATH.read_text(encoding="utf-8"))
 
 
 @router.get("/health")

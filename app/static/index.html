@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AskDocs</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div id="boot-message" class="boot-message">Loading…</div>
+
+  <main id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-card">
+      <h1>AskDocs</h1>
+      <p class="notice">
+        Demo app. Use a throwaway password. Uploaded content is sent to Google's free Gemini API,
+        which may use it to improve Google products. Data is deleted after
+        <span id="doc-ttl">7</span> days; accounts after <span id="account-ttl">30</span> days of inactivity.
+      </p>
+
+      <div id="signups-closed-notice" class="notice warn" hidden>Signups are currently closed.</div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-signin" class="tab" aria-selected="true">Sign in</button>
+        <button type="button" role="tab" id="tab-signup" class="tab" aria-selected="false">Create account</button>
+      </div>
+
+      <form id="signin-form" class="auth-form">
+        <p class="field-error" id="signin-error" role="alert" hidden></p>
+        <label for="signin-email">Email</label>
+        <input id="signin-email" name="email" type="email" autocomplete="email" required>
+        <label for="signin-password">Password</label>
+        <div class="password-field">
+          <input id="signin-password" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" class="toggle-password" data-target="signin-password">Show</button>
+        </div>
+        <button type="submit" class="primary">Sign in</button>
+      </form>
+
+      <form id="signup-form" class="auth-form" hidden>
+        <p class="field-error" id="signup-error" role="alert" hidden></p>
+        <label for="signup-email">Email</label>
+        <input id="signup-email" name="email" type="email" autocomplete="email" required>
+        <label for="signup-password">Password</label>
+        <div class="password-field">
+          <input id="signup-password" name="password" type="password" autocomplete="new-password"
+                 minlength="10" maxlength="128" required>
+          <button type="button" class="toggle-password" data-target="signup-password">Show</button>
+        </div>
+        <div id="invite-field" hidden>
+          <label for="signup-invite">Invite code</label>
+          <input id="signup-invite" name="invite_code" type="text" autocomplete="off">
+        </div>
+        <button type="submit" class="primary">Create account</button>
+      </form>
+    </div>
+  </main>
+
+  <div id="app" class="app" hidden>
+    <header class="app-header">
+      <div class="brand">AskDocs</div>
+      <div class="user-menu">
+        <button type="button" id="user-menu-button" aria-haspopup="true" aria-expanded="false">
+          <span id="user-email"></span> ▾
+        </button>
+        <div id="user-menu-dropdown" class="dropdown" hidden>
+          <button type="button" id="logout-button">Log out</button>
+          <button type="button" id="delete-account-button" class="danger">Delete account and data</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload documents">
+          <p>Drag files here or <label for="file-input" class="file-label">browse</label></p>
+          <p class="hint">PDF, DOCX, TXT, or MD</p>
+          <input id="file-input" type="file" multiple accept=".pdf,.docx,.txt,.md" hidden>
+        </div>
+        <p id="upload-error" class="field-error" role="alert" hidden></p>
+        <ul id="document-list" class="document-list" aria-label="Your documents"></ul>
+
+        <div class="thread-list-section">
+          <div class="thread-list-header">
+            <h2>Chats</h2>
+            <button type="button" id="new-chat-button">New chat</button>
+          </div>
+          <ul id="thread-list" class="thread-list" aria-label="Past conversations"></ul>
+        </div>
+      </aside>
+
+      <section class="chat-pane">
+        <div id="scope-indicator" class="scope-indicator">Searching all your documents</div>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="suggested-questions" class="suggested-questions" hidden>
+          <p>Try asking:</p>
+          <div id="suggested-questions-list"></div>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <div id="tag-chips" class="tag-chips"></div>
+          <ul id="autocomplete" class="autocomplete" hidden></ul>
+          <label for="chat-input" class="sr-only">Your question</label>
+          <textarea id="chat-input" placeholder="Ask about your documents… (type @ to tag one)" rows="2"></textarea>
+          <div class="chat-actions">
+            <button type="submit" id="send-button" class="primary">Send</button>
+            <button type="button" id="stop-button" hidden>Stop</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <div id="citation-popover" class="citation-popover" hidden role="dialog" aria-label="Citation"></div>
+
+  <div id="confirm-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="modal-card">
+      <h2 id="confirm-modal-title">Delete account and data</h2>
+      <p>This permanently deletes your account, documents, and chat history. Enter your password to confirm.</p>
+      <p class="field-error" id="confirm-modal-error" role="alert" hidden></p>
+      <label for="confirm-modal-password" class="sr-only">Password</label>
+      <input id="confirm-modal-password" type="password" autocomplete="current-password" placeholder="Password">
+      <div class="modal-actions">
+        <button type="button" id="confirm-modal-cancel">Cancel</button>
+        <button type="button" id="confirm-modal-ok" class="danger">Delete everything</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/18.0.14/lib/marked.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

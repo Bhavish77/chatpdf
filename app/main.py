@@ -6,8 +6,11 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 if sys.platform == "win32":
     # psycopg's async waiting needs loop.add_reader/add_writer, which the default
@@ -15,7 +18,7 @@ if sys.platform == "win32":
     # Docker on a Windows dev machine; the Linux container is unaffected.
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from app import db, worker
+from app import db, seed, worker
 from app.config import get_settings
 from app.deps import csrf_middleware
 from app.llm import GeminiClient
@@ -29,6 +32,8 @@ from app.vectorindex import PgVectorIndex
 
 logger = logging.getLogger(__name__)
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +44,7 @@ async def lifespan(app: FastAPI):
     pool = await db.open_pool(settings, max_size=5)
     app.state.pool = pool
     app.state.worker_last_seen = None
+    await seed.ensure_seed_document(pool)
 
     llm = GeminiClient(settings)
     vectors = PgVectorIndex(pool)
@@ -76,3 +82,10 @@ app.include_router(meta_routes.router)
 app.include_router(auth_routes.router)
 app.include_router(documents_routes.router)
 app.include_router(chat_routes.router)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/")
+async def index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
