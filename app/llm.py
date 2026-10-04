@@ -95,11 +95,23 @@ def _document_text(text: str, title: str | None) -> str:
 class GeminiClient:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self._client_instance: genai.Client | None = None
         self._concurrency = asyncio.Semaphore(settings.LLM_MAX_CONCURRENCY)
         self._embed_min_interval = settings.EMBED_MIN_INTERVAL_S
         self._embed_lock = asyncio.Lock()
         self._last_embed_call = 0.0
+
+    @property
+    def _client(self) -> genai.Client:
+        # Constructed lazily, not in __init__: genai.Client() validates the
+        # API key eagerly and raises if it's empty. GeminiClient is built
+        # once at process startup (API and worker both construct one
+        # regardless of whether a request ever needs it), so an empty key
+        # must not crash the whole process - only the first actual call
+        # that needs Gemini should fail, with a clear error.
+        if self._client_instance is None:
+            self._client_instance = genai.Client(api_key=self._settings.GEMINI_API_KEY)
+        return self._client_instance
 
     async def _throttle_embed(self) -> None:
         async with self._embed_lock:
