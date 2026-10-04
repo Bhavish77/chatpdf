@@ -40,6 +40,17 @@ async def _mark_document_failed(pool, document_id: str, error: str) -> None:
         )
 
 
+async def _purge_expired_documents(pool) -> int:
+    """on delete cascade removes the document's chunks and blob too. A job
+    still queued/running for an expired document simply finds it gone and
+    exits quietly (see ingestion/pipeline.py), so no extra cleanup is needed."""
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            "delete from documents where expires_at is not null and expires_at <= now() returning id"
+        )
+        return len(await cur.fetchall())
+
+
 async def _heartbeat_loop(pool, job_id: int) -> None:
     while True:
         await asyncio.sleep(30)
@@ -107,7 +118,7 @@ async def _maintenance_loop(pool, settings: Settings, stop_event: asyncio.Event)
             await auth.purge_expired_sessions(pool)
             await auth.delete_inactive_accounts(pool, settings.ACCOUNT_TTL_DAYS)
             await queue.vacuum_finished(pool)
-            # document TTL sweep is added in Phase 5, once documents.py exists.
+            await _purge_expired_documents(pool)
         except Exception:
             logger.exception("maintenance loop iteration failed")
         try:

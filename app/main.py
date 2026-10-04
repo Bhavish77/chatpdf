@@ -20,7 +20,7 @@ if sys.platform == "win32":
 
 from app import db, seed, worker
 from app.config import get_settings
-from app.deps import csrf_middleware
+from app.deps import csrf_middleware, security_headers_middleware
 from app.llm import GeminiClient
 from app.logutil import configure_logging, request_id_middleware
 from app.rag.graph import build_graph
@@ -76,6 +76,7 @@ app = FastAPI(title="AskDocs", lifespan=lifespan)
 # Registered so request_id_middleware (added last) is outermost: it tags every
 # response - including a 403 from the CSRF check - with the same request id.
 app.middleware("http")(csrf_middleware)
+app.middleware("http")(security_headers_middleware)
 app.middleware("http")(request_id_middleware)
 
 app.include_router(meta_routes.router)

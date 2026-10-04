@@ -12,11 +12,15 @@ from psycopg_pool import AsyncConnectionPool
 from app import queue
 from app.config import Settings
 from app.deps import current_user, get_pool_dep, get_settings_dep
+from app.ratelimit import FixedWindowCounter
 from app.storage import PostgresBlobStore
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
+
+# Process-local, in-memory. # PROD: Redis-backed so limits hold across replicas.
+_upload_rate = FixedWindowCounter(window_seconds=3600)
 
 PDF_MIME = "application/pdf"
 DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -73,6 +77,15 @@ async def upload_documents(
 ) -> list[dict]:
     if not files:
         raise HTTPException(status_code=422, detail="No files provided")
+
+    rate_key = str(user["id"])
+    if _upload_rate.increment(rate_key) > settings.UPLOAD_RATE_PER_HOUR:
+        retry_after = _upload_rate.retry_after(rate_key) or 3600
+        raise HTTPException(
+            status_code=429,
+            detail="Too many uploads, try again later.",
+            headers={"Retry-After": str(retry_after)},
+        )
 
     async with pool.connection() as conn:
         cur = await conn.execute(

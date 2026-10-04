@@ -9,13 +9,18 @@ from fastapi.responses import StreamingResponse
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel
 
-from app.deps import current_user, get_pool_dep
+from app.config import Settings
+from app.deps import current_user, get_pool_dep, get_settings_dep
 from app.llm import PermanentError, QuotaExhausted, TransientLLMError
 from app.rag.prompts import NO_ANSWER_MESSAGE
+from app.ratelimit import FixedWindowCounter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["chat"])
+
+# Process-local, in-memory. # PROD: Redis-backed so limits hold across replicas.
+_chat_rate = FixedWindowCounter(window_seconds=60)
 
 
 class ChatBody(BaseModel):
@@ -67,6 +72,17 @@ async def _ensure_thread(pool: AsyncConnectionPool, user_id: str, thread_id: str
         return str(row["id"])
 
 
+async def _chats_today(pool: AsyncConnectionPool, user_id: str) -> int:
+    async with pool.connection() as conn:
+        cur = await conn.execute(
+            """select count(*) as n from messages m join threads t on t.id = m.thread_id
+               where t.owner_id = %s and m.role = 'user' and m.created_at >= date_trunc('day', now())""",
+            (user_id,),
+        )
+        row = await cur.fetchone()
+        return row["n"]
+
+
 async def _load_history(pool: AsyncConnectionPool, thread_id: str) -> list[dict]:
     async with pool.connection() as conn:
         cur = await conn.execute(
@@ -115,7 +131,19 @@ async def chat(
     request: Request,
     user: dict = Depends(current_user),
     pool: AsyncConnectionPool = Depends(get_pool_dep),
+    settings: Settings = Depends(get_settings_dep),
 ):
+    rate_key = str(user["id"])
+    if _chat_rate.increment(rate_key) > settings.CHAT_RATE_PER_MIN:
+        retry_after = _chat_rate.retry_after(rate_key) or 60
+        raise HTTPException(
+            status_code=429,
+            detail="You're sending messages too fast, slow down a little.",
+            headers={"Retry-After": str(retry_after)},
+        )
+    if await _chats_today(pool, user["id"]) >= settings.USER_CHAT_PER_DAY:
+        raise HTTPException(status_code=429, detail="You've reached today's chat limit. Try again tomorrow.")
+
     doc_ids = await _resolve_doc_ids(pool, user["id"], body.doc_ids)
     thread_id = await _ensure_thread(pool, user["id"], body.thread_id)
     history = await _load_history(pool, thread_id) if body.thread_id else []

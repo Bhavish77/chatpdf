@@ -54,3 +54,26 @@ async def csrf_middleware(request: Request, call_next) -> Response:
             if origin.rstrip("/") != expected.rstrip("/"):
                 return JSONResponse({"detail": "Origin mismatch"}, status_code=403)
     return await call_next(request)
+
+
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' https://cdnjs.cloudflare.com; "
+    "style-src 'self'; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+
+
+async def security_headers_middleware(request: Request, call_next) -> Response:
+    """No `sandbox` directive here (it would break the browser's built-in PDF
+    viewer on the file-serving route - see BUILD_SPEC.md 6.7), and these are
+    safe to send on every response, not just HTML ones."""
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = _CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "same-origin"
+    return response
