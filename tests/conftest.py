@@ -55,6 +55,24 @@ def client():
         yield c
 
 
+@pytest.fixture
+async def pool():
+    """A DB pool opened and closed within this test's own event loop.
+
+    Tests that need the pool directly (not through the `client` fixture)
+    must use this instead of calling db.open_pool() themselves: psycopg's
+    async pool is bound to the loop it was opened on, and pytest-asyncio
+    gives each async test its own loop. A pool left open past its test (or
+    opened on one test's loop and later closed by a *different* test's
+    TestClient lifespan) causes exactly the cross-loop hangs/CancelledErrors
+    this fixture exists to avoid.
+    """
+    settings = get_settings()
+    p = await db.open_pool(settings, max_size=5)
+    yield p
+    await db.close_pool()
+
+
 async def insert_document(
     pool,
     *,

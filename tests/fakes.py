@@ -44,3 +44,29 @@ class FakeLLMClient:
         self.generate_calls += 1
         for word in ["This ", "is ", "a ", "fake ", "answer."]:
             yield word
+
+
+class ScriptedLLMClient:
+    """For RAG graph tests: generate_json returns canned responses in order
+    (one per call, across condense/grade/rewrite/verify - whichever actually
+    run), so a test can force a specific branch. embed_* stay deterministic;
+    generate_stream always yields the same configured text."""
+
+    def __init__(self, *, generate_json_responses: list[dict], generate_stream_text: str) -> None:
+        self._responses = list(generate_json_responses)
+        self._stream_text = generate_stream_text
+        self.generate_json_calls: list[dict] = []
+
+    async def embed_documents(self, texts: list[str], *, title: str | None = None) -> list[list[float]]:
+        return [deterministic_vector(t) for t in texts]
+
+    async def embed_query(self, text: str) -> list[float]:
+        return deterministic_vector(text)
+
+    async def generate_json(self, *, model: str, system: str, prompt: str, schema: dict) -> dict:
+        self.generate_json_calls.append({"model": model, "system": system, "prompt": prompt})
+        return self._responses.pop(0)
+
+    async def generate_stream(self, *, model: str, system: str, prompt: str) -> AsyncIterator[str]:
+        for word in self._stream_text.split(" "):
+            yield word + " "

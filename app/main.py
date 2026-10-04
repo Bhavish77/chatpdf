@@ -18,10 +18,14 @@ if sys.platform == "win32":
 from app import db, worker
 from app.config import get_settings
 from app.deps import csrf_middleware
+from app.llm import GeminiClient
 from app.logutil import configure_logging, request_id_middleware
+from app.rag.graph import build_graph
 from app.routes import auth as auth_routes
+from app.routes import chat as chat_routes
 from app.routes import documents as documents_routes
 from app.routes import meta as meta_routes
+from app.vectorindex import PgVectorIndex
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,10 @@ async def lifespan(app: FastAPI):
     pool = await db.open_pool(settings, max_size=5)
     app.state.pool = pool
     app.state.worker_last_seen = None
+
+    llm = GeminiClient(settings)
+    vectors = PgVectorIndex(pool)
+    app.state.graph = build_graph(llm, vectors, settings)
     logger.info("startup complete")
 
     worker_stop_event: asyncio.Event | None = None
@@ -67,3 +75,4 @@ app.middleware("http")(request_id_middleware)
 app.include_router(meta_routes.router)
 app.include_router(auth_routes.router)
 app.include_router(documents_routes.router)
+app.include_router(chat_routes.router)

@@ -1,12 +1,6 @@
 import asyncio
 
-from app import db, queue
-from app.config import get_settings
-
-
-async def _pool():
-    settings = get_settings()
-    return await db.open_pool(settings, max_size=5)
+from app import queue
 
 
 async def _enqueue(pool, n: int = 1) -> list[int]:
@@ -18,8 +12,7 @@ async def _enqueue(pool, n: int = 1) -> list[int]:
     return ids
 
 
-async def test_claim_is_exclusive_across_concurrent_workers():
-    pool = await _pool()
+async def test_claim_is_exclusive_across_concurrent_workers(pool):
     job_ids = set(await _enqueue(pool, n=2))
 
     claimed = await asyncio.gather(
@@ -34,8 +27,7 @@ async def test_claim_is_exclusive_across_concurrent_workers():
     assert await queue.claim(pool, "worker-c") is None
 
 
-async def test_fail_transient_reschedules_with_backoff():
-    pool = await _pool()
+async def test_fail_transient_reschedules_with_backoff(pool):
     async with pool.connection() as conn:
         await queue.enqueue(conn, "ingest_document", {"document_id": "doc-x"}, max_attempts=3)
     job = await queue.claim(pool, "w1")
@@ -53,8 +45,7 @@ async def test_fail_transient_reschedules_with_backoff():
     assert row["in_future"] is True
 
 
-async def test_fail_transient_dead_letters_after_max_attempts():
-    pool = await _pool()
+async def test_fail_transient_dead_letters_after_max_attempts(pool):
     async with pool.connection() as conn:
         await queue.enqueue(conn, "ingest_document", {"document_id": "doc-y"}, max_attempts=1)
     job = await queue.claim(pool, "w1")
@@ -70,8 +61,7 @@ async def test_fail_transient_dead_letters_after_max_attempts():
     assert row["last_error"] == "out of retries"
 
 
-async def test_reclaim_stale_requeues_jobs_under_max_attempts():
-    pool = await _pool()
+async def test_reclaim_stale_requeues_jobs_under_max_attempts(pool):
     async with pool.connection() as conn:
         await queue.enqueue(conn, "ingest_document", {"document_id": "doc-z"}, max_attempts=5)
     job = await queue.claim(pool, "w1")
@@ -91,8 +81,7 @@ async def test_reclaim_stale_requeues_jobs_under_max_attempts():
     assert row["locked_by"] is None
 
 
-async def test_reclaim_stale_dead_letters_jobs_over_max_attempts():
-    pool = await _pool()
+async def test_reclaim_stale_dead_letters_jobs_over_max_attempts(pool):
     async with pool.connection() as conn:
         await queue.enqueue(conn, "ingest_document", {"document_id": "doc-w"}, max_attempts=1)
     job = await queue.claim(pool, "w1")

@@ -4,7 +4,6 @@ from docx_fixtures import make_docx_bytes
 from fakes import FakeLLMClient
 from pdf_fixtures import make_pdf_bytes
 
-from app import db
 from app.config import get_settings
 from app.ingestion.pipeline import PermanentIngestError, run_ingestion
 from app.storage import PostgresBlobStore
@@ -12,11 +11,6 @@ from app.vectorindex import PgVectorIndex
 
 PAGE_1 = "Hello from page one, this has enough text to form a real chunk of content."
 PAGE_2 = "Second page content here with a different set of words entirely."
-
-
-async def _pool():
-    settings = get_settings()
-    return await db.open_pool(settings, max_size=5)
 
 
 async def _setup(pool, *, mime: str, data: bytes, filename: str = "test.pdf") -> str:
@@ -45,8 +39,7 @@ async def _chunk_count(pool, document_id: str) -> int:
         return (await cur.fetchone())["n"]
 
 
-async def test_pdf_ingestion_succeeds_and_sets_ready():
-    pool = await _pool()
+async def test_pdf_ingestion_succeeds_and_sets_ready(pool):
     data = make_pdf_bytes([PAGE_1, PAGE_2])
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -60,8 +53,7 @@ async def test_pdf_ingestion_succeeds_and_sets_ready():
     assert doc["chunk_count"] > 0
 
 
-async def test_docx_ingestion_is_unpaged():
-    pool = await _pool()
+async def test_docx_ingestion_is_unpaged(pool):
     data = make_docx_bytes([PAGE_1, PAGE_2])
     document_id = await _setup(
         pool,
@@ -82,8 +74,7 @@ async def test_docx_ingestion_is_unpaged():
     assert all(p is None for p in pages)
 
 
-async def test_corrupt_pdf_fails_permanently_without_retry():
-    pool = await _pool()
+async def test_corrupt_pdf_fails_permanently_without_retry(pool):
     data = b"%PDF-1.4\n" + bytes(range(256)) * 4  # magic bytes, garbage body
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -91,8 +82,7 @@ async def test_corrupt_pdf_fails_permanently_without_retry():
         await _run(pool, document_id)
 
 
-async def test_scanned_pdf_with_no_text_shows_ocr_message():
-    pool = await _pool()
+async def test_scanned_pdf_with_no_text_shows_ocr_message(pool):
     data = make_pdf_bytes(["", ""])  # structurally valid, no extractable text
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -100,8 +90,7 @@ async def test_scanned_pdf_with_no_text_shows_ocr_message():
         await _run(pool, document_id)
 
 
-async def test_permanent_llm_error_wraps_as_permanent_ingest_error():
-    pool = await _pool()
+async def test_permanent_llm_error_wraps_as_permanent_ingest_error(pool):
     data = make_pdf_bytes([PAGE_1])
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -110,12 +99,11 @@ async def test_permanent_llm_error_wraps_as_permanent_ingest_error():
         await _run(pool, document_id, llm=llm)
 
 
-async def test_transient_llm_error_propagates_for_job_level_retry():
+async def test_transient_llm_error_propagates_for_job_level_retry(pool):
     """run_ingestion itself does not retry; a transient LLM error must bubble
     up so the worker's job-level backoff (queue.fail_transient) takes over."""
     from app.llm import QuotaExhausted
 
-    pool = await _pool()
     data = make_pdf_bytes([PAGE_1])
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -124,8 +112,7 @@ async def test_transient_llm_error_propagates_for_job_level_retry():
         await _run(pool, document_id, llm=llm)
 
 
-async def test_deleted_document_before_ingestion_exits_quietly():
-    pool = await _pool()
+async def test_deleted_document_before_ingestion_exits_quietly(pool):
     data = make_pdf_bytes([PAGE_1])
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
@@ -135,11 +122,10 @@ async def test_deleted_document_before_ingestion_exits_quietly():
     await _run(pool, document_id)  # must not raise
 
 
-async def test_rerunning_ingestion_does_not_duplicate_chunks():
+async def test_rerunning_ingestion_does_not_duplicate_chunks(pool):
     """Models what a reclaimed-after-crash retry looks like: the same document
     gets ingested twice. ON CONFLICT (document_id, chunk_index) must keep the
     chunk count stable instead of doubling it."""
-    pool = await _pool()
     data = make_pdf_bytes([PAGE_1, PAGE_2])
     document_id = await _setup(pool, mime="application/pdf", data=data)
 
