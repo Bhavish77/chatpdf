@@ -77,7 +77,7 @@
       state.user = me;
       await showApp();
     } else {
-      showAuthScreen();
+      showLanding();
     }
   }
 
@@ -92,20 +92,43 @@
   }
 
   // ---------------------------------------------------------------------
-  // Auth screen
+  // Landing / Auth screen
   // ---------------------------------------------------------------------
-  function showAuthScreen() {
+  function hideAllScreens() {
+    el("landing-screen").hidden = true;
+    el("auth-screen").hidden = true;
+    el("app").hidden = true;
+  }
+
+  function showLanding() {
     state.user = null;
     if (state.docsPollTimer) clearTimeout(state.docsPollTimer);
-    el("app").hidden = true;
+    hideAllScreens();
+    el("landing-screen").hidden = false;
+  }
+
+  function showAuthScreen(tab) {
+    state.user = null;
+    if (state.docsPollTimer) clearTimeout(state.docsPollTimer);
+    hideAllScreens();
     el("auth-screen").hidden = false;
+    if (tab) switchTab(tab);
   }
 
   async function showApp() {
-    el("auth-screen").hidden = true;
+    hideAllScreens();
     el("app").hidden = false;
     el("user-email").textContent = state.user.email;
     await Promise.all([refreshDocuments(), refreshThreads()]);
+  }
+
+  function setupLanding() {
+    el("landing-signin-button").addEventListener("click", () => showAuthScreen("signin"));
+    el("hero-signin-button").addEventListener("click", () => showAuthScreen("signin"));
+    el("landing-signup-button").addEventListener("click", () => showAuthScreen("signup"));
+    el("hero-signup-button").addEventListener("click", () => showAuthScreen("signup"));
+    el("cta-signup-button").addEventListener("click", () => showAuthScreen("signup"));
+    el("auth-back-button").addEventListener("click", () => showLanding());
   }
 
   function setupTabs() {
@@ -127,14 +150,15 @@
         const target = el(btn.dataset.target);
         const show = target.type === "password";
         target.type = show ? "text" : "password";
-        btn.textContent = show ? "Hide" : "Show";
+        btn.querySelector("use").setAttribute("href", show ? "#icon-eye-off" : "#icon-eye");
+        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
       });
     });
   }
 
   function showFieldError(id, message) {
     const node = el(id);
-    node.textContent = message;
+    node.querySelector("span").textContent = message;
     node.hidden = !message;
   }
 
@@ -420,7 +444,7 @@
       chip.textContent = tag.filename;
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
-      removeBtn.textContent = "×";
+      removeBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>';
       removeBtn.setAttribute("aria-label", `Remove ${tag.filename}`);
       removeBtn.addEventListener("click", () => removeTag(tag.id));
       chip.append(removeBtn);
@@ -528,7 +552,7 @@
     link.href = `/api/documents/${citation.document_id}/file${citation.page ? `#page=${citation.page}` : ""}`;
     link.target = "_blank";
     link.rel = "noopener";
-    link.textContent = "Open at page";
+    link.innerHTML = 'Open at page <svg class="icon" aria-hidden="true"><use href="#icon-external-link"/></svg>';
     popover.append(snippet, link);
 
     const rect = anchor.getBoundingClientRect();
@@ -548,7 +572,9 @@
   function renderGrounding(bubble, grounding) {
     const badge = document.createElement("span");
     badge.className = `grounding-badge ${grounding.grounded ? "grounded" : "ungrounded"}`;
-    badge.textContent = grounding.grounded ? "Grounded" : "Some claims may not be supported";
+    const icon = grounding.grounded ? "icon-check-circle" : "icon-alert-triangle";
+    const label = grounding.grounded ? "Grounded" : "Some claims may not be supported";
+    badge.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#${icon}"/></svg> ${label}`;
     bubble.append(badge);
   }
 
@@ -585,13 +611,27 @@
     return { events, remainder };
   }
 
+  function autoGrowTextarea(input) {
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 200)}px`;
+  }
+
   function setupChatForm() {
+    const input = el("chat-input");
+    input.addEventListener("input", () => autoGrowTextarea(input));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        el("chat-form").requestSubmit();
+      }
+    });
+
     el("chat-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = el("chat-input");
       const message = input.value.trim();
       if (!message) return;
       input.value = "";
+      autoGrowTextarea(input);
       await sendChatMessage(message);
     });
 
@@ -727,6 +767,7 @@
   // Init
   // ---------------------------------------------------------------------
   function init() {
+    setupLanding();
     setupTabs();
     setupPasswordToggles();
     setupAuthForms();

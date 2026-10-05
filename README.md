@@ -6,7 +6,7 @@ a LangGraph chat pipeline that grades its own retrieval, rewrites the query once
 short, and checks its own answer for groundedness - all on free-tier infrastructure (Gemini's free
 API tier, a free Neon Postgres, a free Render web service).
 
-![Sign-in screen](docs/screenshots/auth-screen.png)
+![AskDocs landing page](docs/screenshots/landing.png)
 
 This is a portfolio project. Correctness, clarity and honest documentation matter more than feature
 count - see [Known limitations](#known-limitations) and [docs/PRODUCTION.md](docs/PRODUCTION.md)

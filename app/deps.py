@@ -59,7 +59,16 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 _CSP = (
     "default-src 'self'; "
     "script-src 'self' https://cdnjs.cloudflare.com; "
-    "style-src 'self'; "
+    # 'unsafe-inline' here, deliberately, for style-src only (never script-src):
+    # the UI sets a few genuinely dynamic inline styles from JS (progress bar
+    # width, citation-popover position, chat textarea auto-grow height), and
+    # CSP's style-src restricts the CSSOM (element.style.x = y), not just
+    # <style> tags and style="" attributes - confirmed live, this blocked all
+    # three. The alternative (a precomputed CSS class per possible value) is
+    # impractical for a percentage width. Inline CSS can't execute script in
+    # any modern browser, so this is a narrow, low-severity trade-off.
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self'; "
     "img-src 'self' data:; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "

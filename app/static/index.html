@@ -7,18 +7,167 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div id="boot-message" class="boot-message">Loading…</div>
+  <!-- Icon sprite: one inline set, reused everywhere via <use>, so every icon
+       shares the same stroke weight and style instead of mixing sources. -->
+  <svg style="display:none" aria-hidden="true">
+    <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 5.5C4 4.67 4.67 4 5.5 4H11a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5H4V5.5Z"/><path d="M20 5.5c0-.83-.67-1.5-1.5-1.5H13a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5H20V5.5Z"/></symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="icon-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></symbol>
+    <symbol id="icon-upload-cloud" viewBox="0 0 24 24"><path d="M7 18a4.6 4.4 0 0 1 0-9 5 5 0 0 1 9.8-1.5A4 4 0 0 1 18 18"/><polyline points="8 13 12 9 16 13"/><line x1="12" y1="9" x2="12" y2="18"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+    <symbol id="icon-external-link" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+    <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="icon-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="icon-alert-triangle" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="icon-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></symbol>
+    <symbol id="icon-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M7 11c-1.7 0-3 1.5-3 4v5h5v-5H6c0-1.5.6-3 2-4Z"/><path d="M17 11c-1.7 0-3 1.5-3 4v5h5v-5h-3c0-1.5.6-3 2-4Z"/></symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="icon-eye-off" viewBox="0 0 24 24"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></symbol>
+    <symbol id="icon-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></symbol>
+    <symbol id="icon-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="icon-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  </svg>
 
+  <div id="boot-message" class="boot-message">Loading AskDocs</div>
+
+  <!-- ================= Landing ================= -->
+  <main id="landing-screen" class="landing" hidden>
+    <nav class="landing-nav">
+      <div class="brand"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg> AskDocs</div>
+      <div class="nav-actions">
+        <button type="button" class="ghost" id="landing-signin-button">Sign in</button>
+        <button type="button" class="primary" id="landing-signup-button">Get started</button>
+      </div>
+    </nav>
+
+    <section class="landing-hero">
+      <div>
+        <span class="eyebrow">Free Gemini API &middot; self-correcting RAG</span>
+        <h1>Ask your documents.<br>Get answers with <em>receipts</em>.</h1>
+        <p class="landing-lede">
+          Upload PDFs, Word docs, or plain text. Tag the ones you care about, ask a question in
+          plain language, and get a streamed answer with citations that link straight back to the
+          page they came from &mdash; from a chat pipeline that grades its own retrieval before it
+          ever answers.
+        </p>
+        <div class="hero-actions">
+          <button type="button" class="primary" id="hero-signup-button">
+            Get started free <svg class="icon" aria-hidden="true"><use href="#icon-arrow-right"/></svg>
+          </button>
+          <button type="button" id="hero-signin-button">Sign in</button>
+        </div>
+        <p class="hero-note">No credit card. Built on free-tier infrastructure end to end.</p>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="mock-row">
+          <div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-dot"></div>
+        </div>
+        <div class="mock-file">
+          <svg class="icon" aria-hidden="true"><use href="#icon-file-text"/></svg>
+          elements_of_style.pdf
+          <span class="mock-badge">Ready</span>
+        </div>
+        <div class="mock-bubble">
+          In Testland, the sky is purple on Tuesdays <strong>[1]</strong>, according to the uploaded
+          document.
+        </div>
+        <div class="mock-chips">
+          <span class="mock-chip">[1] elements_of_style.pdf &middot; p.1</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section">
+      <h2>Built to show its work</h2>
+      <p class="section-lede">Every answer is traceable back to the exact source, and the pipeline tells you how it got there.</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-layers"/></svg></div>
+          <h3>Self-correcting retrieval</h3>
+          <p>The chat graph grades its own retrieved passages, rewrites the query once if they fall short, and checks its final answer for groundedness &mdash; visible in a step-by-step panel.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-quote"/></svg></div>
+          <h3>Real citations</h3>
+          <p>Every claim links to the document and page it came from. Click a citation to see the source snippet and jump straight to that page.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-zap"/></svg></div>
+          <h3>Async, crash-safe ingestion</h3>
+          <p>Upload and keep working. A background queue parses, chunks, and embeds your documents, and survives a worker restart without duplicating work.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg></div>
+          <h3>Private by account</h3>
+          <p>Every document, chat, and quota is scoped to your account. Delete everything, permanently, whenever you want.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-file-text"/></svg></div>
+          <h3>Bring your own documents</h3>
+          <p>PDF, DOCX, TXT, or Markdown. Tag one or several with <code>@filename</code>, or search everything you've uploaded at once.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon-badge"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg></div>
+          <h3>Nothing to install</h3>
+          <p>Runs entirely on free-tier infrastructure &mdash; Gemini's free API, a free Postgres, a free web host. Open source and self-hostable.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section">
+      <h2>How it works</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <h3>Upload</h3>
+          <p>Drag in a PDF, DOCX, TXT, or Markdown file. Watch it move from queued to ready in real time.</p>
+        </div>
+        <div class="step-card">
+          <h3>Tag</h3>
+          <p>Type <code>@</code> to scope a question to one or more documents, or leave it untagged to search everything.</p>
+        </div>
+        <div class="step-card">
+          <h3>Ask</h3>
+          <p>Get a streamed, cited answer &mdash; and a transparent trace of how the system found it.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-cta">
+      <div class="landing-cta-inner">
+        <h2>Try it on your own documents</h2>
+        <p>Free to use, built on free-tier infrastructure. Takes under a minute to sign up.</p>
+        <button type="button" class="primary" id="cta-signup-button">
+          Get started free <svg class="icon" aria-hidden="true"><use href="#icon-arrow-right"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <span>&copy; AskDocs &mdash; a portfolio project.</span>
+      <span>Demo app. Don't upload sensitive documents.</span>
+    </footer>
+  </main>
+
+  <!-- ================= Auth ================= -->
   <main id="auth-screen" class="auth-screen" hidden>
     <div class="auth-card">
-      <h1>AskDocs</h1>
+      <button type="button" class="back-link ghost" id="auth-back-button">
+        <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"/></svg> Back
+      </button>
+      <div class="brand"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg> AskDocs</div>
+
       <p class="notice">
         Demo app. Use a throwaway password. Uploaded content is sent to Google's free Gemini API,
         which may use it to improve Google products. Data is deleted after
         <span id="doc-ttl">7</span> days; accounts after <span id="account-ttl">30</span> days of inactivity.
       </p>
 
-      <div id="signups-closed-notice" class="notice warn" hidden>Signups are currently closed.</div>
+      <p class="notice warn" id="signups-closed-notice" hidden>Signups are currently closed.</p>
 
       <div class="tabs" role="tablist">
         <button type="button" role="tab" id="tab-signin" class="tab" aria-selected="true">Sign in</button>
@@ -26,26 +175,36 @@
       </div>
 
       <form id="signin-form" class="auth-form">
-        <p class="field-error" id="signin-error" role="alert" hidden></p>
+        <p class="field-error" id="signin-error" role="alert" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert-triangle"/></svg>
+          <span></span>
+        </p>
         <label for="signin-email">Email</label>
         <input id="signin-email" name="email" type="email" autocomplete="email" required>
         <label for="signin-password">Password</label>
         <div class="password-field">
           <input id="signin-password" name="password" type="password" autocomplete="current-password" required>
-          <button type="button" class="toggle-password" data-target="signin-password">Show</button>
+          <button type="button" class="toggle-password icon-button" data-target="signin-password" aria-label="Show password">
+            <svg class="icon" aria-hidden="true"><use href="#icon-eye"/></svg>
+          </button>
         </div>
         <button type="submit" class="primary">Sign in</button>
       </form>
 
       <form id="signup-form" class="auth-form" hidden>
-        <p class="field-error" id="signup-error" role="alert" hidden></p>
+        <p class="field-error" id="signup-error" role="alert" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert-triangle"/></svg>
+          <span></span>
+        </p>
         <label for="signup-email">Email</label>
         <input id="signup-email" name="email" type="email" autocomplete="email" required>
         <label for="signup-password">Password</label>
         <div class="password-field">
           <input id="signup-password" name="password" type="password" autocomplete="new-password"
                  minlength="10" maxlength="128" required>
-          <button type="button" class="toggle-password" data-target="signup-password">Show</button>
+          <button type="button" class="toggle-password icon-button" data-target="signup-password" aria-label="Show password">
+            <svg class="icon" aria-hidden="true"><use href="#icon-eye"/></svg>
+          </button>
         </div>
         <div id="invite-field" hidden>
           <label for="signup-invite">Invite code</label>
@@ -56,16 +215,20 @@
     </div>
   </main>
 
+  <!-- ================= App ================= -->
   <div id="app" class="app" hidden>
     <header class="app-header">
-      <div class="brand">AskDocs</div>
+      <div class="brand"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg> AskDocs</div>
       <div class="user-menu">
         <button type="button" id="user-menu-button" aria-haspopup="true" aria-expanded="false">
-          <span id="user-email"></span> ▾
+          <span id="user-email"></span>
+          <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
         </button>
         <div id="user-menu-dropdown" class="dropdown" hidden>
           <button type="button" id="logout-button">Log out</button>
-          <button type="button" id="delete-account-button" class="danger">Delete account and data</button>
+          <button type="button" id="delete-account-button" class="danger">
+            <svg class="icon" aria-hidden="true"><use href="#icon-trash"/></svg> Delete account and data
+          </button>
         </div>
       </div>
     </header>
@@ -73,17 +236,21 @@
     <div class="layout">
       <aside class="sidebar">
         <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload documents">
+          <svg class="icon" aria-hidden="true"><use href="#icon-upload-cloud"/></svg>
           <p>Drag files here or <label for="file-input" class="file-label">browse</label></p>
           <p class="hint">PDF, DOCX, TXT, or MD</p>
           <input id="file-input" type="file" multiple accept=".pdf,.docx,.txt,.md" hidden>
         </div>
-        <p id="upload-error" class="field-error" role="alert" hidden></p>
+        <p class="field-error" id="upload-error" role="alert" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert-triangle"/></svg>
+          <span></span>
+        </p>
         <ul id="document-list" class="document-list" aria-label="Your documents"></ul>
 
         <div class="thread-list-section">
           <div class="thread-list-header">
             <h2>Chats</h2>
-            <button type="button" id="new-chat-button">New chat</button>
+            <button type="button" class="button-sm" id="new-chat-button">New chat</button>
           </div>
           <ul id="thread-list" class="thread-list" aria-label="Past conversations"></ul>
         </div>
@@ -100,10 +267,16 @@
           <div id="tag-chips" class="tag-chips"></div>
           <ul id="autocomplete" class="autocomplete" hidden></ul>
           <label for="chat-input" class="sr-only">Your question</label>
-          <textarea id="chat-input" placeholder="Ask about your documents… (type @ to tag one)" rows="2"></textarea>
+          <div class="input-row">
+            <textarea id="chat-input" placeholder="Ask about your documents… (type @ to tag one)" rows="1"></textarea>
+          </div>
           <div class="chat-actions">
-            <button type="submit" id="send-button" class="primary">Send</button>
-            <button type="button" id="stop-button" hidden>Stop</button>
+            <button type="submit" id="send-button" class="primary">
+              <svg class="icon" aria-hidden="true"><use href="#icon-send"/></svg> Send
+            </button>
+            <button type="button" id="stop-button" hidden>
+              <svg class="icon" aria-hidden="true"><use href="#icon-stop"/></svg> Stop
+            </button>
           </div>
         </form>
       </section>
@@ -116,12 +289,17 @@
     <div class="modal-card">
       <h2 id="confirm-modal-title">Delete account and data</h2>
       <p>This permanently deletes your account, documents, and chat history. Enter your password to confirm.</p>
-      <p class="field-error" id="confirm-modal-error" role="alert" hidden></p>
+      <p class="field-error" id="confirm-modal-error" role="alert" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#icon-alert-triangle"/></svg>
+        <span></span>
+      </p>
       <label for="confirm-modal-password" class="sr-only">Password</label>
       <input id="confirm-modal-password" type="password" autocomplete="current-password" placeholder="Password">
       <div class="modal-actions">
         <button type="button" id="confirm-modal-cancel">Cancel</button>
-        <button type="button" id="confirm-modal-ok" class="danger">Delete everything</button>
+        <button type="button" id="confirm-modal-ok" class="danger">
+          <svg class="icon" aria-hidden="true"><use href="#icon-trash"/></svg> Delete everything
+        </button>
       </div>
     </div>
   </div>
