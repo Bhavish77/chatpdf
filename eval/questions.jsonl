@@ -1,0 +1,22 @@
+# DRAFT: needs human verification.
+# Grounded in seed/elements_of_style.pdf as actually paginated by scripts/build_seed_pdf.py -
+# expected_pages refer to THIS PDF's own page numbers, not the original 1920 book's internal
+# page numbers (which differ: this edition was re-paginated from the Project Gutenberg plain-text
+# file, not scanned from the original printing).
+{"question": "How do you form the possessive singular of a noun, according to the book?", "type": "single-fact", "expected_pages": [5], "must_include": ["'s"]}
+{"question": "What should be enclosed between commas, according to the book?", "type": "single-fact", "expected_pages": [5, 6], "must_include": ["parenthetic"]}
+{"question": "What voice does the book recommend a writer use?", "type": "single-fact", "expected_pages": [16], "must_include": ["active"]}
+{"question": "In what form does the book say to put statements?", "type": "single-fact", "expected_pages": [18], "must_include": ["positive"]}
+{"question": "What kind of language does the book recommend: vague and general, or something else?", "type": "single-fact", "expected_pages": [19], "must_include": ["specific"]}
+{"question": "What does the book say a writer should omit?", "type": "single-fact", "expected_pages": [21], "must_include": ["needless"]}
+{"question": "Who wrote this book, and what university was he a professor at?", "type": "single-fact", "expected_pages": [2], "must_include": ["Cornell"]}
+{"question": "In what year was the book first copyrighted?", "type": "single-fact", "expected_pages": [2], "must_include": ["1918"]}
+{"question": "How should a series of three or more terms with a single conjunction be punctuated, and what exception does the book give for the names of business firms?", "type": "multi-part", "expected_pages": [5], "must_include": ["comma", "Brown, Shipley"]}
+{"question": "What are the two main exceptions to the rule for forming the possessive singular of nouns?", "type": "multi-part", "expected_pages": [5], "must_include": ["Jesus"]}
+{"question": "What does the book say about using the active voice, and what does it say about omitting needless words?", "type": "multi-part", "expected_pages": [16, 21], "must_include": ["active", "needless"]}
+{"question": "What is rule 11 about, and what is rule 12 about?", "type": "multi-part", "expected_pages": [18, 19], "must_include": ["positive", "specific"]}
+{"question": "Name two of the elementary rules of usage in the book and summarize what each one says.", "type": "multi-part", "expected_pages": [5, 6, 16], "must_include": ["'s", "active"]}
+{"question": "What does the book say about using semicolons in legal contracts?", "type": "unanswerable", "expected_pages": [], "must_include": []}
+{"question": "According to the book, what is the recommended maximum length for a tweet?", "type": "unanswerable", "expected_pages": [], "must_include": []}
+{"question": "What does the author say about using emojis in professional writing?", "type": "unanswerable", "expected_pages": [], "must_include": []}
+{"question": "What programming language does the book recommend for technical documentation?", "type": "unanswerable", "expected_pages": [], "must_include": []}
