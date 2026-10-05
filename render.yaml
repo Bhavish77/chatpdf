@@ -24,8 +24,15 @@ services:
         value: "true"
       - key: TRUST_PROXY_HEADERS
         value: "true"
+      # Left empty deliberately: the CSRF check falls back to the request's
+      # own Host header when this is unset, which is self-correcting
+      # regardless of what subdomain Render actually assigns the service
+      # (the name in this file is a suggestion, not a guarantee - if
+      # "askdocs" is taken, Render picks something like askdocs-ab12.onrender.com
+      # instead, and a hardcoded mismatch here would break login/signup from
+      # request one). Set this explicitly only if you add a custom domain.
       - key: PUBLIC_ORIGIN
-        value: https://askdocs.onrender.com
+        value: ""
 
       # Same defaults as .env.example; tweak in the Render dashboard as needed.
       - key: GEN_MODEL
