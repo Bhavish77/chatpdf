@@ -15,3 +15,8 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Without this, `from app import db` in conftest.py only resolves when
+# pytest is invoked as `python -m pytest` (which prepends cwd to sys.path).
+# The bare `pytest` console script - what CI runs - does not, and fails
+# collection with ModuleNotFoundError: No module named 'app'.
+pythonpath = ["."]
