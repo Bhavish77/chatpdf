@@ -332,7 +332,9 @@
       if (doc.error) {
         const err = document.createElement("p");
         err.className = "error-text";
-        err.textContent = doc.error;
+        const maxLen = 140;
+        err.textContent = doc.error.length > maxLen ? `${doc.error.slice(0, maxLen)}…` : doc.error;
+        if (doc.error.length > maxLen) err.title = doc.error; // full text on hover
         li.append(err);
       }
 
